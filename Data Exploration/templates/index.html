@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Recommender</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 20px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        h1 { color: #667eea; margin-bottom: 10px; }
+        .subtitle { color: #666; margin-bottom: 30px; }
+        .search-box { display: flex; gap: 10px; margin-bottom: 30px; }
+        #searchInput { flex: 1; padding: 12px 20px; border: 2px solid #ddd; border-radius: 10px; font-size: 16px; }
+        #searchInput:focus { outline: none; border-color: #667eea; }
+        .search-results { margin-bottom: 30px; max-height: 300px; overflow-y: auto; }
+        .song-item { padding: 15px; margin: 10px 0; background: #f8f9fa; border-radius: 10px; cursor: pointer; transition: all 0.3s; border: 2px solid transparent; }
+        .song-item:hover { background: #e9ecef; transform: translateX(5px); }
+        .song-item.selected { background: #667eea; color: white; border-color: #667eea; }
+        .song-name { font-weight: bold; font-size: 16px; margin-bottom: 5px; }
+        .song-artist { color: #666; font-size: 14px; }
+        .song-item.selected .song-artist { color: #e0e0e0; }
+        .playlist { background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px; min-height: 100px; }
+        .playlist h2 { color: #667eea; margin-bottom: 15px; font-size: 20px; }
+        .playlist-item { background: white; padding: 12px; margin: 8px 0; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .remove-btn { background: #dc3545; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; }
+        .remove-btn:hover { background: #c82333; }
+        .btn { background: #667eea; color: white; border: none; padding: 12px 30px; border-radius: 10px; font-size: 16px; cursor: pointer; transition: all 0.3s; }
+        .btn:hover { background: #5568d3; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102,126,234,0.4); }
+        .btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+        .recommendations { margin-top: 30px; }
+        .recommendations h2 { color: #667eea; margin-bottom: 15px; }
+        .recommendation-item { background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 10px; border-left: 4px solid #667eea; }
+        .genre-tag { display: inline-block; background: #764ba2; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; margin-top: 5px; }
+        .empty-state { text-align: center; color: #999; padding: 40px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 Music Recommender</h1>
+        <p class="subtitle">Add songs to your playlist and get personalized recommendations</p>
+        
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search for songs or artists...">
+        </div>
+        
+        <div class="search-results" id="searchResults"></div>
+        
+        <div class="playlist">
+            <h2>Your Playlist (<span id="playlistCount">0</span> songs)</h2>
+            <div id="playlist"></div>
+        </div>
+        
+        <button class="btn" id="recommendBtn" onclick="getRecommendations()" disabled>Get Recommendations</button>
+        
+        <div class="recommendations" id="recommendations"></div>
+    </div>
+
+    <script>
+        let selectedSongs = [];
+        let searchTimeout;
+
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            clearTimeout(searchTimeout);
+            const query = e.target.value.trim();
+            
+            if (query.length < 2) {
+                document.getElementById('searchResults').innerHTML = '';
+                return;
+            }
+            
+            searchTimeout = setTimeout(() => searchSongs(query), 300);
+        });
+
+        async function searchSongs(query) {
+            const response = await fetch('/search_songs', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({query: query})
+            });
+            
+            const songs = await response.json();
+            displaySearchResults(songs);
+        }
+
+        function displaySearchResults(songs) {
+            const container = document.getElementById('searchResults');
+            
+            if (songs.length === 0) {
+                container.innerHTML = '<div class="empty-state">No songs found</div>';
+                return;
+            }
+            
+            container.innerHTML = songs.map(song => `
+                <div class="song-item" onclick="addToPlaylist(${song.index}, '${song.track_name.replace(/'/g, "\'")}', '${song.artists.replace(/'/g, "\'")}', '${song.genre}')">
+                    <div class="song-name">${song.track_name}</div>
+                    <div class="song-artist">${song.artists} • ${song.genre}</div>
+                </div>
+            `).join('');
+        }
+
+        function addToPlaylist(index, name, artist, genre) {
+            if (selectedSongs.some(s => s.index === index)) return;
+            
+            selectedSongs.push({index, name, artist, genre});
+            updatePlaylist();
+            document.getElementById('searchInput').value = '';
+            document.getElementById('searchResults').innerHTML = '';
+        }
+
+        function removeFromPlaylist(index) {
+            selectedSongs = selectedSongs.filter(s => s.index !== index);
+            updatePlaylist();
+        }
+
+        function updatePlaylist() {
+            const container = document.getElementById('playlist');
+            document.getElementById('playlistCount').textContent = selectedSongs.length;
+            
+            if (selectedSongs.length === 0) {
+                container.innerHTML = '<div class="empty-state">Add songs to your playlist</div>';
+                document.getElementById('recommendBtn').disabled = true;
+                return;
+            }
+            
+            container.innerHTML = selectedSongs.map(song => `
+                <div class="playlist-item">
+                    <div>
+                        <div class="song-name">${song.name}</div>
+                        <div class="song-artist">${song.artist}</div>
+                    </div>
+                    <button class="remove-btn" onclick="removeFromPlaylist(${song.index})">Remove</button>
+                </div>
+            `).join('');
+            
+            document.getElementById('recommendBtn').disabled = false;
+        }
+
+        async function getRecommendations() {
+            const indices = selectedSongs.map(s => s.index);
+            
+            const response = await fetch('/recommend', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({song_indices: indices})
+            });
+            
+            const recommendations = await response.json();
+            displayRecommendations(recommendations);
+        }
+
+        function displayRecommendations(recommendations) {
+            const container = document.getElementById('recommendations');
+            
+            if (recommendations.length === 0) {
+                container.innerHTML = '<div class="empty-state">No recommendations found</div>';
+                return;
+            }
+            
+            container.innerHTML = '<h2>Recommended for You</h2>' + 
+                recommendations.map(song => `
+                    <div class="recommendation-item">
+                        <div class="song-name">${song.track_name}</div>
+                        <div class="song-artist">${song.artists}</div>
+                        <span class="genre-tag">${song.genre}</span>
+                        <span class="genre-tag">Popularity: ${song.popularity}</span>
+                    </div>
+                `).join('');
+        }
+
+        updatePlaylist();
+    </script>
+</body>
+</html>
