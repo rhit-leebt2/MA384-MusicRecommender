@@ -1,174 +1,429 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Music Recommender</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 20px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-        h1 { color: #667eea; margin-bottom: 10px; }
-        .subtitle { color: #666; margin-bottom: 30px; }
-        .search-box { display: flex; gap: 10px; margin-bottom: 30px; }
-        #searchInput { flex: 1; padding: 12px 20px; border: 2px solid #ddd; border-radius: 10px; font-size: 16px; }
-        #searchInput:focus { outline: none; border-color: #667eea; }
-        .search-results { margin-bottom: 30px; max-height: 300px; overflow-y: auto; }
-        .song-item { padding: 15px; margin: 10px 0; background: #f8f9fa; border-radius: 10px; cursor: pointer; transition: all 0.3s; border: 2px solid transparent; }
-        .song-item:hover { background: #e9ecef; transform: translateX(5px); }
-        .song-item.selected { background: #667eea; color: white; border-color: #667eea; }
-        .song-name { font-weight: bold; font-size: 16px; margin-bottom: 5px; }
-        .song-artist { color: #666; font-size: 14px; }
-        .song-item.selected .song-artist { color: #e0e0e0; }
-        .playlist { background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px; min-height: 100px; }
-        .playlist h2 { color: #667eea; margin-bottom: 15px; font-size: 20px; }
-        .playlist-item { background: white; padding: 12px; margin: 8px 0; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .remove-btn { background: #dc3545; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; }
-        .remove-btn:hover { background: #c82333; }
-        .btn { background: #667eea; color: white; border: none; padding: 12px 30px; border-radius: 10px; font-size: 16px; cursor: pointer; transition: all 0.3s; }
-        .btn:hover { background: #5568d3; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102,126,234,0.4); }
-        .btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
-        .recommendations { margin-top: 30px; }
-        .recommendations h2 { color: #667eea; margin-bottom: 15px; }
-        .recommendation-item { background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 10px; border-left: 4px solid #667eea; }
-        .genre-tag { display: inline-block; background: #764ba2; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; margin-top: 5px; }
-        .empty-state { text-align: center; color: #999; padding: 40px; }
-    </style>
+	<meta charset="UTF-8">
+	<title>Music Recommender Demo</title>
+	<style>
+		:root {
+			--bg-gradient: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #4e7ac7 100%);
+			--card-bg: #ffffff;
+			--accent: #4f46e5;
+			--accent-soft: #eef2ff;
+			--text-main: #111827;
+			--text-muted: #6b7280;
+			--border-subtle: #e5e7eb;
+		}
+
+		* { box-sizing: border-box; }
+
+		body {
+			margin: 0;
+			min-height: 100vh;
+			font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+			background-image: var(--bg-gradient);
+			color: var(--text-main);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.container {
+			max-width: 1000px;
+			width: 100%;
+			margin: 2rem;
+		}
+
+		.shell {
+			background: radial-gradient(circle at top left, rgba(255,255,255,0.24), transparent 55%),
+				linear-gradient(to bottom right, rgba(255,255,255,0.9), rgba(255,255,255,0.85));
+			border-radius: 1.5rem;
+			padding: 2rem 2.5rem;
+			box-shadow: 0 20px 40px rgba(15,23,42,0.35);
+		}
+
+		h1 {
+			margin-top: 0;
+			margin-bottom: 0.25rem;
+			font-size: 2rem;
+		}
+
+		.subtitle {
+			margin: 0 0 1.5rem;
+			color: var(--text-muted);
+			font-size: 0.95rem;
+		}
+
+		.grid {
+			display: grid;
+			grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.2fr);
+			gap: 1.5rem;
+		}
+
+		.card {
+			background: var(--card-bg);
+			border-radius: 1rem;
+			padding: 1.25rem 1.5rem;
+			box-shadow: 0 10px 25px rgba(15,23,42,0.08);
+			border: 1px solid rgba(148,163,184,0.2);
+		}
+
+		h2 {
+			margin-top: 0;
+			margin-bottom: 0.5rem;
+			font-size: 1.1rem;
+		}
+
+		.section-caption {
+			margin: 0 0 1rem;
+			color: var(--text-muted);
+			font-size: 0.85rem;
+		}
+
+		.playlist-item { margin-bottom: 0.5rem; }
+		.song-title { font-weight: 600; }
+		.error { color: #b91c1c; margin-top: 0.5rem; font-size: 0.85rem; }
+
+		.btn-row { margin-top: 0.75rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+		.btn {
+			padding: 0.45rem 0.9rem;
+			border-radius: 999px;
+			border: none;
+			cursor: pointer;
+			font-size: 0.85rem;
+			font-weight: 500;
+			transition: transform 0.08s ease, box-shadow 0.08s ease, background-color 0.15s ease;
+		}
+		.btn-primary {
+			background-color: var(--accent);
+			color: #fff;
+			box-shadow: 0 8px 18px rgba(79,70,229,0.55);
+		}
+		.btn-primary:hover { background-color: #4338ca; transform: translateY(-1px); }
+		.btn-secondary {
+			background-color: #e5e7eb;
+			color: #111827;
+		}
+		.btn-secondary:hover { background-color: #d1d5db; transform: translateY(-1px); }
+
+		input[type="text"] {
+			width: 100%;
+			padding: 0.55rem 0.75rem;
+			border-radius: 0.75rem;
+			border: 1px solid var(--border-subtle);
+			font-size: 0.9rem;
+			outline: none;
+			transition: border-color 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
+			background-color: #f9fafb;
+		}
+		input[type="text"]:focus {
+			border-color: var(--accent);
+			box-shadow: 0 0 0 1px rgba(79,70,229,0.15);
+			background-color: #ffffff;
+		}
+
+		.recs {
+			display: flex;
+			gap: 1rem;
+			flex-wrap: wrap;
+		}
+		.rec-card {
+			flex: 1 1 260px;
+			background: var(--accent-soft);
+			border-radius: 0.9rem;
+			padding: 0.9rem 1rem;
+			border: 1px solid rgba(129,140,248,0.5);
+		}
+		.badge {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.25rem;
+			padding: 0.15rem 0.5rem;
+			border-radius: 999px;
+			font-size: 0.7rem;
+			color: #fff;
+			text-transform: uppercase;
+			letter-spacing: 0.04em;
+		}
+		.badge-knn { background-color: #16a34a; }
+		.badge-random { background-color: #f97316; }
+		.sim { font-size: 0.85rem; color: var(--text-muted); }
+
+		.suggestions-wrapper {
+			position: relative;
+			margin-top: 0.4rem;
+		}
+		.suggestions {
+			position: absolute;
+			z-index: 20;
+			left: 0;
+			right: 0;
+			background: #ffffff;
+			border: 1px solid var(--border-subtle);
+			border-radius: 0.75rem;
+			box-shadow: 0 12px 28px rgba(15,23,42,0.18);
+			max-height: 260px;
+			overflow-y: auto;
+		}
+		.suggestion-item {
+			padding: 0.45rem 0.75rem;
+			cursor: pointer;
+			font-size: 0.9rem;
+		}
+		.suggestion-item span { display: block; }
+		.suggestion-title { font-weight: 500; }
+		.suggestion-artist { color: var(--text-muted); font-size: 0.8rem; }
+		.suggestion-item:hover { background-color: #f3f4ff; }
+		.suggestions-empty {
+			padding: 0.45rem 0.75rem;
+			font-size: 0.8rem;
+			color: var(--text-muted);
+		}
+
+		.feature-panel {
+			margin-top: 1rem;
+			padding-top: 0.75rem;
+			border-top: 1px solid rgba(148,163,184,0.4);
+		}
+		.feature-select-row {
+			display: flex;
+			gap: 0.5rem;
+			align-items: center;
+			margin-bottom: 0.5rem;
+		}
+		.feature-select-row select {
+			flex: 1;
+			padding: 0.35rem 0.5rem;
+			border-radius: 0.5rem;
+			border: 1px solid var(--border-subtle);
+			font-size: 0.85rem;
+		}
+		.feature-table {
+			width: 100%;
+			border-collapse: collapse;
+			margin-top: 0.35rem;
+			font-size: 0.8rem;
+		}
+		.feature-table th,
+		.feature-table td {
+			padding: 0.25rem 0.4rem;
+			border-bottom: 1px solid #e5e7eb;
+			text-align: left;
+		}
+		.feature-table th {
+			color: var(--text-muted);
+			font-weight: 500;
+		}
+		.feature-table tr:last-child th,
+		.feature-table tr:last-child td {
+			border-bottom: none;
+		}
+		.feature-table .feat-name { text-transform: lowercase; }
+		.feature-details {
+			margin-top: 0.2rem;
+		}
+		.feature-summary {
+			cursor: pointer;
+			color: var(--accent);
+			font-size: 0.8rem;
+		}
+
+		@media (max-width: 840px) {
+			.grid { grid-template-columns: minmax(0, 1fr); }
+			.shell { padding: 1.5rem 1.25rem; }
+		}
+	</style>
 </head>
 <body>
-    <div class="container">
-        <h1>🎵 Music Recommender</h1>
-        <p class="subtitle">Add songs to your playlist and get personalized recommendations</p>
-        
-        <div class="search-box">
-            <input type="text" id="searchInput" placeholder="Search for songs or artists...">
-        </div>
-        
-        <div class="search-results" id="searchResults"></div>
-        
-        <div class="playlist">
-            <h2>Your Playlist (<span id="playlistCount">0</span> songs)</h2>
-            <div id="playlist"></div>
-        </div>
-        
-        <button class="btn" id="recommendBtn" onclick="getRecommendations()" disabled>Get Recommendations</button>
-        
-        <div class="recommendations" id="recommendations"></div>
-    </div>
+<div class="container">
+	<div class="shell">
+		<h1>Music Recommender Demo</h1>
+		<p class="subtitle">Build a quick playlist and compare KNN vs. random recommendations in real time.</p>
+		<div class="grid">
+			<div class="card">
+				<h2>Add Songs</h2>
+				<p class="section-caption">Start typing a song title or artist and pick from the smart suggestions.</p>
+				<form method="post">
+					<label for="song_query" class="section-caption">Search by song or artist</label>
+					<input type="text" id="song_query" name="song_query" placeholder="e.g. I'm Yours or Jason Mraz" autocomplete="off">
+					<input type="hidden" id="song_index" name="song_index" value="">
+					<div class="suggestions-wrapper">
+						<div id="suggestions" class="suggestions" style="display: none;"></div>
+					</div>
+					<div class="btn-row">
+						<button class="btn btn-primary" type="submit" name="action" value="add">Add to Playlist</button>
+						<button class="btn btn-secondary" type="submit" name="action" value="clear">Clear Playlist</button>
+					</div>
+				</form>
+				{% if error %}
+					<div class="error">{{ error }}</div>
+				{% endif %}
+			</div>
+			<div class="card">
+				<h2>Current Playlist</h2>
+				<p class="section-caption">These are the tracks driving your current recommendation.</p>
+				{% if playlist_feature_data %}
+					{% for item in playlist_feature_data %}
+						<div class="playlist-item">
+							<span class="song-title">{{ item.track_name }}</span>
+							&mdash; {{ item.artists }}
+							<details class="feature-details">
+								<summary class="feature-summary">Show feature values</summary>
+								<table class="feature-table">
+									<tbody>
+									{% for name, val in item.features.items() %}
+										<tr>
+											<th class="feat-name">{{ name }}</th>
+											<td>{{ '%.4f'|format(val) }}</td>
+										</tr>
+									{% endfor %}
+									</tbody>
+								</table>
+							</details>
+						</div>
+					{% endfor %}
+					{% if playlist_avg_features %}
+						<div class="feature-panel">
+							<h3 style="margin: 0 0 0.25rem; font-size: 0.95rem;">Playlist average features</h3>
+							<table class="feature-table">
+								<tbody>
+								{% for name, val in playlist_avg_features.items() %}
+									<tr>
+										<th class="feat-name">{{ name }}</th>
+										<td>{{ '%.4f'|format(val) }}</td>
+									</tr>
+								{% endfor %}
+								</tbody>
+							</table>
+						</div>
+					{% endif %}
+				{% else %}
+					<p class="section-caption">No songs yet. Add one on the left to get started.</p>
+				{% endif %}
+			</div>
+		</div>
+		<div class="card" style="margin-top: 1.5rem;">
+			<h2>Next Song Recommendations</h2>
+			{% if current_song %}
+				<p class="section-caption">
+					Based on playlist average
+				</p>
+				<div class="recs">
+					<div class="rec-card">
+						<span class="badge badge-knn">KNN Model</span>
+						{% if knn_rec %}
+							<p class="song-title" style="margin: 0.4rem 0 0.1rem;">{{ knn_rec.track_name }}</p>
+							<p style="margin: 0 0 0.3rem;">{{ knn_rec.artists }}</p>
+							<p class="sim">Cosine similarity: {{ '%.4f'|format(knn_rec.similarity) }}</p>
+							{% if knn_rec.features %}
+								<details class="feature-details">
+									<summary class="feature-summary">Show feature values</summary>
+									<table class="feature-table">
+										<tbody>
+										{% for name, val in knn_rec.features.items() %}
+											<tr>
+												<th class="feat-name">{{ name }}</th>
+												<td>{{ '%.4f'|format(val) }}</td>
+											</tr>
+										{% endfor %}
+										</tbody>
+									</table>
+								</details>
+							{% endif %}
+						{% else %}
+							<p class="section-caption">No KNN recommendation available.</p>
+						{% endif %}
+					</div>
+					<div class="rec-card">
+						<span class="badge badge-random">Random Baseline</span>
+						{% if rand_rec %}
+							<p class="song-title" style="margin: 0.4rem 0 0.1rem;">{{ rand_rec.track_name }}</p>
+							<p style="margin: 0 0 0.3rem;">{{ rand_rec.artists }}</p>
+							<p class="sim">Cosine similarity: {{ '%.4f'|format(rand_rec.similarity) }}</p>
+							{% if rand_rec.features %}
+								<details class="feature-details">
+									<summary class="feature-summary">Show feature values</summary>
+									<table class="feature-table">
+										<tbody>
+										{% for name, val in rand_rec.features.items() %}
+											<tr>
+												<th class="feat-name">{{ name }}</th>
+												<td>{{ '%.4f'|format(val) }}</td>
+											</tr>
+										{% endfor %}
+										</tbody>
+									</table>
+								</details>
+							{% endif %}
+						{% else %}
+							<p class="section-caption">No random recommendation available.</p>
+						{% endif %}
+					</div>
+				</div>
+			{% else %}
+				<p class="section-caption">Add at least one song to the playlist to see how the KNN model compares with a random pick.</p>
+			{% endif %}
+		</div>
+	</div>
+</div>
 
-    <script>
-        let selectedSongs = [];
-        let searchTimeout;
+<script>
+const searchInput = document.getElementById('song_query');
+const songIndexInput = document.getElementById('song_index');
+const suggestionsBox = document.getElementById('suggestions');
+let suggestionTimeout = null;
 
-        document.getElementById('searchInput').addEventListener('input', function(e) {
-            clearTimeout(searchTimeout);
-            const query = e.target.value.trim();
-            
-            if (query.length < 2) {
-                document.getElementById('searchResults').innerHTML = '';
-                return;
-            }
-            
-            searchTimeout = setTimeout(() => searchSongs(query), 300);
-        });
+async function fetchSuggestions(query) {
+	if (!query || query.length < 1) {
+		suggestionsBox.style.display = 'none';
+		suggestionsBox.innerHTML = '';
+		if (songIndexInput) songIndexInput.value = '';
+		return;
+	}
+	try {
+		const res = await fetch('/search_songs', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ query })
+		});
+		const data = await res.json();
+		console.log('Suggestions response:', data);
+		if (!Array.isArray(data) || data.length === 0) {
+			suggestionsBox.innerHTML = '<div class="suggestions-empty">No matching songs found.</div>';
+			suggestionsBox.style.display = 'block';
+			return;
+		}
+		suggestionsBox.innerHTML = '';
+		data.forEach(song => {
+			const div = document.createElement('div');
+			div.className = 'suggestion-item';
+			div.innerHTML = `<span class="suggestion-title">${song.track_name}</span><span class="suggestion-artist">${song.artists}</span>`;
+			div.onclick = () => {
+				searchInput.value = `${song.track_name}`;
+				if (songIndexInput) songIndexInput.value = String(song.index);
+				suggestionsBox.style.display = 'none';
+				suggestionsBox.innerHTML = '';
+			};
+			suggestionsBox.appendChild(div);
+		});
+		suggestionsBox.style.display = 'block';
+	} catch (e) {
+		console.error('Error fetching suggestions', e);
+	}
+}
 
-        async function searchSongs(query) {
-            const response = await fetch('/search_songs', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({query: query})
-            });
-            
-            const songs = await response.json();
-            displaySearchResults(songs);
-        }
+searchInput.addEventListener('keyup', () => {
+	const q = searchInput.value.trim();
+	if (suggestionTimeout) {
+		clearTimeout(suggestionTimeout);
+	}
+	suggestionTimeout = setTimeout(() => fetchSuggestions(q), 200);
+});
 
-        function displaySearchResults(songs) {
-            const container = document.getElementById('searchResults');
-            
-            if (songs.length === 0) {
-                container.innerHTML = '<div class="empty-state">No songs found</div>';
-                return;
-            }
-            
-            container.innerHTML = songs.map(song => `
-                <div class="song-item" onclick="addToPlaylist(${song.index}, '${song.track_name.replace(/'/g, "\'")}', '${song.artists.replace(/'/g, "\'")}', '${song.genre}')">
-                    <div class="song-name">${song.track_name}</div>
-                    <div class="song-artist">${song.artists} • ${song.genre}</div>
-                </div>
-            `).join('');
-        }
-
-        function addToPlaylist(index, name, artist, genre) {
-            if (selectedSongs.some(s => s.index === index)) return;
-            
-            selectedSongs.push({index, name, artist, genre});
-            updatePlaylist();
-            document.getElementById('searchInput').value = '';
-            document.getElementById('searchResults').innerHTML = '';
-        }
-
-        function removeFromPlaylist(index) {
-            selectedSongs = selectedSongs.filter(s => s.index !== index);
-            updatePlaylist();
-        }
-
-        function updatePlaylist() {
-            const container = document.getElementById('playlist');
-            document.getElementById('playlistCount').textContent = selectedSongs.length;
-            
-            if (selectedSongs.length === 0) {
-                container.innerHTML = '<div class="empty-state">Add songs to your playlist</div>';
-                document.getElementById('recommendBtn').disabled = true;
-                return;
-            }
-            
-            container.innerHTML = selectedSongs.map(song => `
-                <div class="playlist-item">
-                    <div>
-                        <div class="song-name">${song.name}</div>
-                        <div class="song-artist">${song.artist}</div>
-                    </div>
-                    <button class="remove-btn" onclick="removeFromPlaylist(${song.index})">Remove</button>
-                </div>
-            `).join('');
-            
-            document.getElementById('recommendBtn').disabled = false;
-        }
-
-        async function getRecommendations() {
-            const indices = selectedSongs.map(s => s.index);
-            
-            const response = await fetch('/recommend', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({song_indices: indices})
-            });
-            
-            const recommendations = await response.json();
-            displayRecommendations(recommendations);
-        }
-
-        function displayRecommendations(recommendations) {
-            const container = document.getElementById('recommendations');
-            
-            if (recommendations.length === 0) {
-                container.innerHTML = '<div class="empty-state">No recommendations found</div>';
-                return;
-            }
-            
-            container.innerHTML = '<h2>Recommended for You</h2>' + 
-                recommendations.map(song => `
-                    <div class="recommendation-item">
-                        <div class="song-name">${song.track_name}</div>
-                        <div class="song-artist">${song.artists}</div>
-                        <span class="genre-tag">${song.genre}</span>
-                        <span class="genre-tag">Popularity: ${song.popularity}</span>
-                    </div>
-                `).join('');
-        }
-
-        updatePlaylist();
-    </script>
+document.addEventListener('click', (evt) => {
+	if (!suggestionsBox.contains(evt.target) && evt.target !== searchInput) {
+		suggestionsBox.style.display = 'none';
+	}
+});
+</script>
 </body>
 </html>
