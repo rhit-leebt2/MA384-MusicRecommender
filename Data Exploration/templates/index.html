@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
-	<title>Music Recommender Demo</title>
+	<title>Genre Prediction Demo</title>
 	<style>
 		:root {
 			--bg-gradient: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #4e7ac7 100%);
@@ -53,24 +53,18 @@
 			font-size: 0.95rem;
 		}
 
-		.grid {
-			display: grid;
-			grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.2fr);
-			gap: 1.5rem;
-		}
-
 		.card {
 			background: var(--card-bg);
 			border-radius: 1rem;
-			padding: 1.25rem 1.5rem;
+			padding: 1.5rem 1.75rem;
 			box-shadow: 0 10px 25px rgba(15,23,42,0.08);
 			border: 1px solid rgba(148,163,184,0.2);
 		}
 
 		h2 {
 			margin-top: 0;
-			margin-bottom: 0.5rem;
-			font-size: 1.1rem;
+			margin-bottom: 0.75rem;
+			font-size: 1.25rem;
 		}
 
 		.section-caption {
@@ -79,17 +73,44 @@
 			font-size: 0.85rem;
 		}
 
-		.playlist-item { margin-bottom: 0.5rem; }
-		.song-title { font-weight: 600; }
-		.error { color: #b91c1c; margin-top: 0.5rem; font-size: 0.85rem; }
+		.slider-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+			gap: 1rem 1.25rem;
+		}
 
-		.btn-row { margin-top: 0.75rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+		.slider-row {
+			margin-bottom: 0.5rem;
+		}
+
+		.slider-label {
+			display: flex;
+			justify-content: space-between;
+			align-items: baseline;
+			font-size: 0.85rem;
+			margin-bottom: 0.15rem;
+		}
+
+		.slider-label span:first-child {
+			font-weight: 500;
+		}
+
+		.slider-range {
+			font-size: 0.75rem;
+			color: var(--text-muted);
+		}
+
+		input[type="range"] {
+			width: 100%;
+		}
+
+		.btn-row { margin-top: 1rem; display: flex; gap: 0.75rem; flex-wrap: wrap; }
 		.btn {
-			padding: 0.45rem 0.9rem;
+			padding: 0.5rem 1.2rem;
 			border-radius: 999px;
 			border: none;
 			cursor: pointer;
-			font-size: 0.85rem;
+			font-size: 0.9rem;
 			font-weight: 500;
 			transition: transform 0.08s ease, box-shadow 0.08s ease, background-color 0.15s ease;
 		}
@@ -99,330 +120,149 @@
 			box-shadow: 0 8px 18px rgba(79,70,229,0.55);
 		}
 		.btn-primary:hover { background-color: #4338ca; transform: translateY(-1px); }
-		.btn-secondary {
-			background-color: #e5e7eb;
-			color: #111827;
-		}
-		.btn-secondary:hover { background-color: #d1d5db; transform: translateY(-1px); }
 
-		input[type="text"] {
-			width: 100%;
-			padding: 0.55rem 0.75rem;
-			border-radius: 0.75rem;
-			border: 1px solid var(--border-subtle);
-			font-size: 0.9rem;
-			outline: none;
-			transition: border-color 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
-			background-color: #f9fafb;
-		}
-		input[type="text"]:focus {
-			border-color: var(--accent);
-			box-shadow: 0 0 0 1px rgba(79,70,229,0.15);
-			background-color: #ffffff;
-		}
-
-		.recs {
-			display: flex;
-			gap: 1rem;
-			flex-wrap: wrap;
-		}
-		.rec-card {
-			flex: 1 1 260px;
-			background: var(--accent-soft);
-			border-radius: 0.9rem;
-			padding: 0.9rem 1rem;
-			border: 1px solid rgba(129,140,248,0.5);
-		}
-		.badge {
-			display: inline-flex;
-			align-items: center;
-			gap: 0.25rem;
-			padding: 0.15rem 0.5rem;
-			border-radius: 999px;
-			font-size: 0.7rem;
-			color: #fff;
-			text-transform: uppercase;
-			letter-spacing: 0.04em;
-		}
-		.badge-knn { background-color: #16a34a; }
-		.badge-random { background-color: #f97316; }
-		.sim { font-size: 0.85rem; color: var(--text-muted); }
-
-		.suggestions-wrapper {
-			position: relative;
-			margin-top: 0.4rem;
-		}
-		.suggestions {
-			position: absolute;
-			z-index: 20;
-			left: 0;
-			right: 0;
-			background: #ffffff;
-			border: 1px solid var(--border-subtle);
-			border-radius: 0.75rem;
-			box-shadow: 0 12px 28px rgba(15,23,42,0.18);
-			max-height: 260px;
-			overflow-y: auto;
-		}
-		.suggestion-item {
-			padding: 0.45rem 0.75rem;
-			cursor: pointer;
-			font-size: 0.9rem;
-		}
-		.suggestion-item span { display: block; }
-		.suggestion-title { font-weight: 500; }
-		.suggestion-artist { color: var(--text-muted); font-size: 0.8rem; }
-		.suggestion-item:hover { background-color: #f3f4ff; }
-		.suggestions-empty {
-			padding: 0.45rem 0.75rem;
-			font-size: 0.8rem;
-			color: var(--text-muted);
-		}
-
-		.feature-panel {
-			margin-top: 1rem;
-			padding-top: 0.75rem;
-			border-top: 1px solid rgba(148,163,184,0.4);
-		}
-		.feature-select-row {
-			display: flex;
-			gap: 0.5rem;
-			align-items: center;
-			margin-bottom: 0.5rem;
-		}
-		.feature-select-row select {
-			flex: 1;
-			padding: 0.35rem 0.5rem;
-			border-radius: 0.5rem;
-			border: 1px solid var(--border-subtle);
-			font-size: 0.85rem;
-		}
-		.feature-table {
+		.results-table {
 			width: 100%;
 			border-collapse: collapse;
-			margin-top: 0.35rem;
-			font-size: 0.8rem;
+			margin-top: 0.75rem;
+			font-size: 0.9rem;
 		}
-		.feature-table th,
-		.feature-table td {
-			padding: 0.25rem 0.4rem;
+		.results-table th,
+		.results-table td {
+			padding: 0.45rem 0.5rem;
 			border-bottom: 1px solid #e5e7eb;
 			text-align: left;
 		}
-		.feature-table th {
+		.results-table th {
 			color: var(--text-muted);
-			font-weight: 500;
+			font-weight: 600;
 		}
-		.feature-table tr:last-child th,
-		.feature-table tr:last-child td {
+		.results-table tr:last-child th,
+		.results-table tr:last-child td {
 			border-bottom: none;
-		}
-		.feature-table .feat-name { text-transform: lowercase; }
-		.feature-details {
-			margin-top: 0.2rem;
-		}
-		.feature-summary {
-			cursor: pointer;
-			color: var(--accent);
-			font-size: 0.8rem;
-		}
-
-		@media (max-width: 840px) {
-			.grid { grid-template-columns: minmax(0, 1fr); }
-			.shell { padding: 1.5rem 1.25rem; }
 		}
 	</style>
 </head>
 <body>
 <div class="container">
 	<div class="shell">
-		<h1>Music Recommender Demo</h1>
-		<p class="subtitle">Build a quick playlist and compare KNN vs. random recommendations in real time.</p>
-		<div class="grid">
-			<div class="card">
-				<h2>Add Songs</h2>
-				<p class="section-caption">Start typing a song title or artist and pick from the smart suggestions.</p>
-				<form method="post">
-					<label for="song_query" class="section-caption">Search by song or artist</label>
-					<input type="text" id="song_query" name="song_query" placeholder="e.g. I'm Yours or Jason Mraz" autocomplete="off">
-					<input type="hidden" id="song_index" name="song_index" value="">
-					<div class="suggestions-wrapper">
-						<div id="suggestions" class="suggestions" style="display: none;"></div>
-					</div>
-					<div class="btn-row">
-						<button class="btn btn-primary" type="submit" name="action" value="add">Add to Playlist</button>
-						<button class="btn btn-secondary" type="submit" name="action" value="clear">Clear Playlist</button>
-					</div>
-				</form>
-				{% if error %}
-					<div class="error">{{ error }}</div>
-				{% endif %}
-			</div>
-			<div class="card">
-				<h2>Current Playlist</h2>
-				<p class="section-caption">These are the tracks driving your current recommendation.</p>
-				{% if playlist_feature_data %}
-					{% for item in playlist_feature_data %}
-						<div class="playlist-item">
-							<span class="song-title">{{ item.track_name }}</span>
-							&mdash; {{ item.artists }}
-							<details class="feature-details">
-								<summary class="feature-summary">Show feature values</summary>
-								<table class="feature-table">
-									<tbody>
-									{% for name, val in item.features.items() %}
-										<tr>
-											<th class="feat-name">{{ name }}</th>
-											<td>{{ '%.4f'|format(val) }}</td>
-										</tr>
-									{% endfor %}
-									</tbody>
-								</table>
-							</details>
+		<h1>Genre Prediction Demo</h1>
+		<p class="subtitle">Adjust the audio feature sliders and compare what each model predicts for the genre (trained using {{ target_genre_col }}).</p>
+		<div class="card">
+			<h2>Feature Sliders</h2>
+			<p class="section-caption">These sliders correspond to the numeric features used in the Random Forest and other models from the notebook.</p>
+			<div class="slider-grid">
+				{% for name, cfg in feature_config.items() %}
+					<div class="slider-row">
+						<div class="slider-label">
+							<span>{{ name.replace('_', ' ')|title }}</span>
+							<span id="{{ name }}_value">{{ '%.3f'|format(input_values[name]) }}</span>
 						</div>
-					{% endfor %}
-					{% if playlist_avg_features %}
-						<div class="feature-panel">
-							<h3 style="margin: 0 0 0.25rem; font-size: 0.95rem;">Playlist average features</h3>
-							<table class="feature-table">
-								<tbody>
-								{% for name, val in playlist_avg_features.items() %}
-									<tr>
-										<th class="feat-name">{{ name }}</th>
-										<td>{{ '%.4f'|format(val) }}</td>
-									</tr>
-								{% endfor %}
-								</tbody>
-							</table>
-						</div>
-					{% endif %}
-				{% else %}
-					<p class="section-caption">No songs yet. Add one on the left to get started.</p>
-				{% endif %}
+						<input
+							id="{{ name }}"
+							name="{{ name }}"
+							type="range"
+							min="{{ cfg.min }}"
+							max="{{ cfg.max }}"
+							step="{{ cfg.step }}"
+							value="{{ input_values[name] }}"
+							oninput="handleSliderInput()"
+						/>
+						<div class="slider-range">Min {{ '%.3f'|format(cfg.min) }}, Max {{ '%.3f'|format(cfg.max) }}</div>
+					</div>
+				{% endfor %}
 			</div>
+			<p class="section-caption" style="margin-top: 0.75rem;">Predictions update automatically as you move the sliders.</p>
 		</div>
-		<div class="card" style="margin-top: 1.5rem;">
-			<h2>Next Song Recommendations</h2>
-			{% if current_song %}
-				<p class="section-caption">
-					Based on playlist average
-				</p>
-				<div class="recs">
-					<div class="rec-card">
-						<span class="badge badge-knn">KNN Model</span>
-						{% if knn_rec %}
-							<p class="song-title" style="margin: 0.4rem 0 0.1rem;">{{ knn_rec.track_name }}</p>
-							<p style="margin: 0 0 0.3rem;">{{ knn_rec.artists }}</p>
-							<p class="sim">Cosine similarity: {{ '%.4f'|format(knn_rec.similarity) }}</p>
-							{% if knn_rec.features %}
-								<details class="feature-details">
-									<summary class="feature-summary">Show feature values</summary>
-									<table class="feature-table">
-										<tbody>
-										{% for name, val in knn_rec.features.items() %}
-											<tr>
-												<th class="feat-name">{{ name }}</th>
-												<td>{{ '%.4f'|format(val) }}</td>
-											</tr>
-										{% endfor %}
-										</tbody>
-									</table>
-								</details>
-							{% endif %}
-						{% else %}
-							<p class="section-caption">No KNN recommendation available.</p>
-						{% endif %}
-					</div>
-					<div class="rec-card">
-						<span class="badge badge-random">Random Baseline</span>
-						{% if rand_rec %}
-							<p class="song-title" style="margin: 0.4rem 0 0.1rem;">{{ rand_rec.track_name }}</p>
-							<p style="margin: 0 0 0.3rem;">{{ rand_rec.artists }}</p>
-							<p class="sim">Cosine similarity: {{ '%.4f'|format(rand_rec.similarity) }}</p>
-							{% if rand_rec.features %}
-								<details class="feature-details">
-									<summary class="feature-summary">Show feature values</summary>
-									<table class="feature-table">
-										<tbody>
-										{% for name, val in rand_rec.features.items() %}
-											<tr>
-												<th class="feat-name">{{ name }}</th>
-												<td>{{ '%.4f'|format(val) }}</td>
-											</tr>
-										{% endfor %}
-										</tbody>
-									</table>
-								</details>
-							{% endif %}
-						{% else %}
-							<p class="section-caption">No random recommendation available.</p>
-						{% endif %}
-					</div>
-				</div>
-			{% else %}
-				<p class="section-caption">Add at least one song to the playlist to see how the KNN model compares with a random pick.</p>
-			{% endif %}
+		<div class="card" style="margin-top: 1.25rem;">
+			<h2>Model Predictions</h2>
+			<p class="section-caption">Each row shows the predicted genre for the current slider configuration.</p>
+			<table class="results-table">
+				<thead>
+				<tr>
+					<th>Model</th>
+					<th>Predicted Genre</th>
+				</tr>
+				</thead>
+				<tbody id="predictions_body">
+				<tr id="predictions_placeholder">
+					<td colspan="2" class="section-caption">Move any slider to see live predictions from the KNN, Logistic Regression, Decision Tree, and Random Forest models.</td>
+				</tr>
+				</tbody>
+			</table>
 		</div>
 	</div>
 </div>
 
 <script>
-const searchInput = document.getElementById('song_query');
-const songIndexInput = document.getElementById('song_index');
-const suggestionsBox = document.getElementById('suggestions');
-let suggestionTimeout = null;
-
-async function fetchSuggestions(query) {
-	if (!query || query.length < 1) {
-		suggestionsBox.style.display = 'none';
-		suggestionsBox.innerHTML = '';
-		if (songIndexInput) songIndexInput.value = '';
-		return;
-	}
-	try {
-		const res = await fetch('/search_songs', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ query })
-		});
-		const data = await res.json();
-		console.log('Suggestions response:', data);
-		if (!Array.isArray(data) || data.length === 0) {
-			suggestionsBox.innerHTML = '<div class="suggestions-empty">No matching songs found.</div>';
-			suggestionsBox.style.display = 'block';
-			return;
-		}
-		suggestionsBox.innerHTML = '';
-		data.forEach(song => {
-			const div = document.createElement('div');
-			div.className = 'suggestion-item';
-			div.innerHTML = `<span class="suggestion-title">${song.track_name}</span><span class="suggestion-artist">${song.artists}</span>`;
-			div.onclick = () => {
-				searchInput.value = `${song.track_name}`;
-				if (songIndexInput) songIndexInput.value = String(song.index);
-				suggestionsBox.style.display = 'none';
-				suggestionsBox.innerHTML = '';
-			};
-			suggestionsBox.appendChild(div);
-		});
-		suggestionsBox.style.display = 'block';
-	} catch (e) {
-		console.error('Error fetching suggestions', e);
+function updateSliderValue(name, value) {
+	const el = document.getElementById(name + '_value');
+	if (!el) return;
+	const num = parseFloat(value);
+	if (isNaN(num)) {
+		el.textContent = value;
+	} else {
+		el.textContent = num.toFixed(3);
 	}
 }
 
-searchInput.addEventListener('keyup', () => {
-	const q = searchInput.value.trim();
-	if (suggestionTimeout) {
-		clearTimeout(suggestionTimeout);
-	}
-	suggestionTimeout = setTimeout(() => fetchSuggestions(q), 200);
-});
+let predictTimeout = null;
 
-document.addEventListener('click', (evt) => {
-	if (!suggestionsBox.contains(evt.target) && evt.target !== searchInput) {
-		suggestionsBox.style.display = 'none';
+function collectSliderValues() {
+	const values = {};
+	const inputs = document.querySelectorAll('input[type="range"]');
+	inputs.forEach(input => {
+		const name = input.name || input.id;
+		if (!name) return;
+		values[name] = parseFloat(input.value);
+		updateSliderValue(name, input.value);
+	});
+	return values;
+}
+
+async function sendPredictionRequest() {
+	const body = collectSliderValues();
+	try {
+		const res = await fetch('/predict', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(body)
+		});
+		if (!res.ok) return;
+		const data = await res.json();
+		const preds = data.predictions || {};
+		const tbody = document.getElementById('predictions_body');
+		const placeholder = document.getElementById('predictions_placeholder');
+		if (!tbody) return;
+		if (placeholder) {
+			placeholder.remove();
+		}
+		tbody.innerHTML = '';
+		Object.keys(preds).forEach(modelName => {
+			const tr = document.createElement('tr');
+			const th = document.createElement('th');
+			th.textContent = modelName;
+			const td = document.createElement('td');
+			td.textContent = preds[modelName];
+			tr.appendChild(th);
+			tr.appendChild(td);
+			tbody.appendChild(tr);
+		});
+	} catch (e) {
+		console.error('Prediction request failed', e);
 	}
+}
+
+function handleSliderInput() {
+	if (predictTimeout) {
+		clearTimeout(predictTimeout);
+	}
+	predictTimeout = setTimeout(sendPredictionRequest, 150);
+}
+
+// Trigger an initial prediction on page load
+window.addEventListener('DOMContentLoaded', () => {
+	sendPredictionRequest();
 });
 </script>
 </body>
